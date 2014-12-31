@@ -1,2 +1,4 @@
 flask/
 config.pyc
+app/models.pyc
+app/__init__.pyc
