@@ -18,6 +18,15 @@
                 {% if user.id == g.user.id %} <!-- Only appears when on your own profile, not other people's -->
                     <p> <a href="{{ url_for('edit') }}">Edit</a> </p>
                 {% endif %}
+                <p>{{ user.followers.count() }} followers
+                {% if user.id == g.user.id %}
+                  <a href="{{ url_for('edit') }}">Edit your profile</a>
+                {% elif not g.user.is_following(user) %}
+                  <a href="{{ url_for('follow', nickname=user.nickname) }}">Follow</a>
+                {% else %}
+                  <a href="{{ url_for('unfollow', nickname=user.nickname) }}">Unfollow</a>
+              {% endif %}
+              </p>
             </td>
         </tr>
     </table>
