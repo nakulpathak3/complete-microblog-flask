@@ -4,19 +4,31 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
 from flask.ext.openid import OpenID
 from flask.ext.mail import Mail
-from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
+from flask_oauth import OAuth
+
+from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET
 
 app = Flask(__name__)
 app.config.from_object('config') #The app's configuration should be imported from the object 'config'
 
 db = SQLAlchemy(app)
 mail = Mail(app)
+oauth = OAuth()
 
 lm = LoginManager()
 lm.init_app(app)
 lm.login_view = 'login'
 
 oid = OpenID(app, os.path.join(basedir, 'tmp'))
+
+twitter = oauth.remote_app('twitter',
+    base_url='https://api.twitter.com/1/',
+    request_token_url='https://api.twitter.com/oauth/request_token',
+    access_token_url='https://api.twitter.com/oauth/access_token',
+    authorize_url='https://api.twitter.com/oauth/authenticate',
+    consumer_key= TWITTER_CONSUMER_KEY,
+    consumer_secret= TWITTER_CONSUMER_SECRET
+)
 
 from app import views, models
 

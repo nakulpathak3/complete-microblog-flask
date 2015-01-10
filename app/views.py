@@ -1,6 +1,6 @@
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask.ext.login import login_user, logout_user, current_user, login_required
-from app import app, db, lm, oid
+from app import app, db, lm, oid, oauth, twitter
 from forms import LoginForm, EditForm, PostForm
 from models import User, Post
 from datetime import datetime
@@ -38,40 +38,39 @@ def index(page=1):
 def login():
     if g.user is not None and g.user.is_authenticated():
         return redirect(url_for('index'))
-    form = LoginForm()
-    if form.validate_on_submit():
-        session['remember_me'] = form.remember_me.data
-        return oid.try_login(form.openid.data, ask_for=['nickname', 'email'])
+    return twitter.authorize(callback=url_for('oauth_authorized'))
 
-    return render_template('login.html', title='Sign In', form=form,
-                            providers=app.config['OPENID_PROVIDERS'])
+@app.route('/oauth-authorized')
+@twitter.authorized_handler
+def oauth_authorized(resp):
+    if resp is None:
+        flash(u'You denied the request to sign in.')
+        return redirect(url_for('index'))
 
-@oid.after_login
-def after_login(resp): #resp contains arguments asked for (nickname and email)
-    if resp.email is None or resp.email == "":
-        flash("Invalid Login. Please try again.")
-        return redirect(url_for('login'))
+    session['twitter_token'] = (
+        resp['oauth_token'],
+        resp['oauth_token_secret']
+    )
+    nickname = resp['screen_name']
+    user = User.query.filter_by(nickname=nickname).first() #Check if already in database (old user)
 
-    user = User.query.filter_by(email=resp.email).first() #Check if already in database (old user)
-
-    if user is None: #User is new and not in database
-        nickname = resp.nickname #Store nickname we got from the openid function in local variable
-
-        if nickname is None or nickname == "": #Check if nickname not empty
-            nickname = resp.email.split('@')[0] #If it is, put part before @ in email as username
-
-        nickname = User.make_unique_nickname(nickname)
-        user = User(nickname=nickname, email= resp.email) #create User object with given nickname and email
-        db.session.add(user)
-        db.session.commit()
-        db.session.add(user.follow(user))
-        db.session.commit()
+    nickname = User.make_unique_nickname(nickname)
+    user = User(nickname=nickname, email= "%s@gmail.com" % resp['screen_name']) #create User object with given nickname and email
+    db.session.add(user)
+    db.session.commit()
+    db.session.add(user.follow(user))
+    db.session.commit()
     remember_me = False
     if 'remember_me' in session:
         remember_me = session['remember_me']
         session.pop('remember_me', None)
     login_user(user, remember=remember_me)
     return redirect(request.args.get('next') or url_for('index'))
+
+
+@twitter.tokengetter
+def get_twitter_token(token=None):
+    return session.get('twitter_token')
 
 @app.route('/logout')
 def logout():
