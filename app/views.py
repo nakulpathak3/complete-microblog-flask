@@ -1,9 +1,10 @@
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from app import app, db, lm, oid
-from .forms import LoginForm, EditForm
-from models import User
+from forms import LoginForm, EditForm, PostForm
+from models import User, Post
 from datetime import datetime
+from config import POSTS_PER_PAGE
 
 @app.before_request
 def before_request():
@@ -17,28 +18,20 @@ def before_request():
 def load_user(id):
     return User.query.get(int(id))
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
+@app.route('/index/<int:page>', methods=['GET', 'POST'])
 @login_required
-def index():
-    user = g.user
-    posts = [
-        {
-            'author': {'nickname': 'John'},
-            'body': 'Beautiful day in Portland!'
-
-        },
-        {
-            'author': {'nickname': 'Susan'},
-            'body': 'The Avengers movie was so cool!'
-        },
-        {
-            'author': {'nickname': 'Nakul'},
-            'body': 'Flask is fun and easy!'
-        }
-
-    ]
-    return render_template('index.html', title="Home", user=user, posts=posts)
+def index(page=1):
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.post.data, timestamp=datetime.utcnow(), author=g.user)
+        db.session.add(post)
+        db.session.commit()
+        flash("Your post is now live yo!")
+        return redirect(url_for('index'))
+    posts = g.user.followed_posts().paginate(page, POSTS_PER_PAGE, False)
+    return render_template('index.html', title="Home", form=form, posts=posts)
 
 @app.route('/login', methods=['GET', 'POST'])
 @oid.loginhandler
@@ -86,16 +79,14 @@ def logout():
     return redirect(url_for('index'))
 
 @app.route('/user/<nickname>')
+@app.route('/user/<nickname>/<int:page>')
 @login_required
-def user(nickname):
+def user(nickname, page=1):
     user = User.query.filter_by(nickname=nickname).first()
-    if user == None:
+    if user is None:
         flash('User %s not found' % nickname)
         return redirect(url_for('index'))
-    posts = [
-                {'author': user, 'body': 'Test post 1'},
-                {'author': user, 'body': 'Test post 2'}
-            ]
+    posts = user.posts.paginate(page, POSTS_PER_PAGE, False)
     return render_template('user.html', user = user, posts = posts)
 
 @app.route('/edit', methods=['GET', 'POST'])
@@ -123,9 +114,9 @@ def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
 
-@app.route('/follow/<nickname>')
+@app.route('/unfollow/<nickname>')
 @login_required
-def follow(nickname):
+def unfollow(nickname):
     user = User.query.filter_by(nickname=nickname).first()
     if user is None:
         flash("User %s not found." % nickname)
@@ -141,3 +132,37 @@ def follow(nickname):
     db.session.commit()
     flash("You have stopped following" + nickname + ".")
     return redirect(url_for('user', nickname=nickname))
+
+@app.route('/follow/<nickname>')
+@login_required
+def follow(nickname):
+    user = User.query.filter_by(nickname=nickname).first()
+    if user is None:
+        flash("User %s not found." % nickname)
+        return redirect(url_for('index'))
+    if user == g.user:
+        flash("You can't follow yourself!")
+        return redirect(url_for('index'))
+    u = g.user.follow(user)
+    if u is None:
+        flash("Cannot follow user %s." % nickname)
+        return redirect(url_for('user'), nickname=nickname)
+    db.session.add(u)
+    db.session.commit()
+    flash("You are now following " + nickname + ".")
+    return redirect(url_for('user', nickname=nickname))
+
+@app.route('/delete/<int:id>')
+@login_required
+def delete(id):
+    post = Post.query.get(id)
+    if post is None:
+        flash('Post not found buddy')
+        return redirect(url_for('index'))
+    if post.author.id != g.user.id:
+        flash('Not your post to delete')
+        return redirect(url_for('index'))
+    db.session.delete(post)
+    db.session.commit()
+    flash('Your post is gone :(')
+    return redirect(url_for('index'))

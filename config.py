@@ -11,9 +11,15 @@ OPENID_PROVIDERS = [
     {'name': 'MyOpenID', 'url': 'https://www.myopenid.com'}
 ]
 
+POSTS_PER_PAGE = 3
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
+if os.environ.get('DATABASE_URL') is None:
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
+else:
+    SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 
 MAIL_SERVER = 'localhost'
@@ -21,4 +27,5 @@ MAIL_PORT = 25
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
 
-ADMINS = ["nakulpathak3@hotmail.com"]
+# administrator list
+ADMINS = ['nakulpathak3008@gmail.com']
