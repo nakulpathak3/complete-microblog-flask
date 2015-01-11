@@ -1,15 +1,7 @@
 import os
 
 WTF_CSRF_ENABLED = True
-SECRET_KEY = 'you-will-never-guess'
-
-OPENID_PROVIDERS = [
-    {'name': 'Google', 'url': 'https://www.google.com/accounts/o8/id'},
-    {'name': 'Yahoo', 'url': 'https://me.yahoo.com'},
-    {'name': 'AOL', 'url': 'http://openid.aol.com/<username>'},
-    {'name': 'Flickr', 'url': 'http://www.flickr.com/<username>'},
-    {'name': 'MyOpenID', 'url': 'https://www.myopenid.com'}
-]
+SECRET_KEY = 'what-do-you-want'
 
 POSTS_PER_PAGE = 3
 
@@ -21,8 +13,16 @@ else:
     SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
 
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
-TWITTER_CONSUMER_KEY = 'L0qOWNCyaUSltIAbqN4F1Qs7x'
-TWITTER_CONSUMER_SECRET = 'F0kYoGA6n2lIWxJVwFTvUHt99AvH5AbYo81DdkQ90iOWHaNbQv'
+OAUTH_CREDENTIALS = {
+    'twitter': {
+        'id': 'L0qOWNCyaUSltIAbqN4F1Qs7x',
+        'secret': 'F0kYoGA6n2lIWxJVwFTvUHt99AvH5AbYo81DdkQ90iOWHaNbQv'
+    },
+    'facebook': {
+        'id': '878798145503824',
+        'secret': '4ae20303f2effbc70707d9be0c41a287'
+    }
+}
 
 MAIL_SERVER = 'localhost'
 MAIL_PORT = 25

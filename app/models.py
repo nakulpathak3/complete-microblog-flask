@@ -8,8 +8,9 @@ followers = db.Table('followers',
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nickname = db.Column(db.String(64), index=True, unique=True)
+    nickname = db.Column(db.String(64), index=True)
     email = db.Column(db.String(120), index=True, unique=True)
+    social_id = db.Column(db.String(64), unique=True)
     posts = db.relationship('Post', backref = 'author', lazy = 'dynamic')
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime)

@@ -1,10 +1,10 @@
 from flask_wtf import Form
 from wtforms.fields import StringField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Length
+from models import User
 
-class LoginForm(Form):
-    openid = StringField('openid', validators = [DataRequired()])
-    remember_me = BooleanField('remember_me', default = False)
+class EmailForm(Form):
+    email = StringField('email', validators= [DataRequired()])
 
 class EditForm(Form):
     nickname = StringField('nickname', validators = [DataRequired()])
@@ -28,4 +28,3 @@ class EditForm(Form):
 
 class PostForm(Form):
     post = StringField('post', validators=[DataRequired()])
-    content = StringField('content', validators=[DataRequired()])
