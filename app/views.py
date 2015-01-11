@@ -56,6 +56,8 @@ def oauth_callback(provider):
         return redirect(url_for('index'))
     user = User.query.filter_by(social_id=social_id).first()
     username=User.make_unique_nickname(username)
+    if User.query.filter_by(email=email).first() is not None:
+        email = email + '2'
     if not user:
         user = User(social_id=social_id, nickname=username, email=email)
         db.session.add(user)
